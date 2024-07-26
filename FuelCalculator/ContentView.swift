@@ -15,9 +15,10 @@ extension UIApplication {
 }
 
 struct ContentView: View {
-//    @Environment(\.modelContext) private var modelContext
+    //    @Environment(\.modelContext) private var modelContext
     
-    
+    @AppStorage("showCarbonDioxide") var showCarbonDioxide = true
+    @State private var showSettingsView = false
     @State private var fuelPrice: String = ""
     @State private var kilometer: String = ""
     @State private var fuelUsageAt100km: String = ""
@@ -94,10 +95,11 @@ struct ContentView: View {
                                     .bold()
                             }
                         }
+                        if showCarbonDioxide {
                             VStack(alignment: .leading) {
                                 HStack{
-                                Text("Carbon Footprint:")
-                                    .font(.headline)
+                                    Text("Carbon Footprint:")
+                                        .font(.headline)
                                     Text(carbonFootprint, format: .number)
                                     Text("kg CO2")
                                         .fontWeight(.light)
@@ -107,11 +109,14 @@ struct ContentView: View {
                                 .frame(maxWidth: .infinity)
                                 .background(.red.opacity(0.2))
                                 .clipShape(.rect(cornerRadius: 12))
-                                
                             }
+                        }
+                        HStack{
                             Button {
                                 UIApplication.shared.endEditing()  // Dismiss the keyboard
-                                calculateCosts()
+                                withAnimation {
+                                    calculateCosts()
+                                }
                             } label: {
                                 Text("Calculate")
                                     .padding()
@@ -120,8 +125,18 @@ struct ContentView: View {
                                     .background(.green)
                                     .clipShape(.rect(cornerRadius: 13))
                             }
-                            
-                                           
+                            //Clear button in order to clear all textfields easily
+                            Button {
+                                clearFields()
+                            } label: {
+                                Text("Clear")
+                                    .padding()
+                                    .foregroundStyle(.white)
+                                    .background(.red)
+                                    .clipShape(.rect(cornerRadius: 13))
+                            }
+
+                        }
                     } footer: {
                         Text("This calculator helps you estimate the total fuel cost for your trip, how much each passenger should contribute, and the carbon footprint of your journey.")
                         
@@ -129,7 +144,10 @@ struct ContentView: View {
                     
                 }
             }
-            
+            //sheet for SettingsView
+            .sheet(isPresented: $showSettingsView) {
+                SettingsView()
+            }
             .alert(isPresented: $showAlert) {
                 Alert(title: Text("Invalid Input"), message: Text(alertMessage), dismissButton: .default(Text("OK")))
             }
@@ -139,6 +157,14 @@ struct ContentView: View {
                     Button("Done") {
                         UIApplication.shared.endEditing()
                     }.tint(.gray)
+                }
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button {
+                        showSettingsView = true
+                    } label: {
+                        Label("Settings", systemImage: "gear")
+                    }.tint(.gray)
+
                 }
             }
         }
@@ -178,6 +204,18 @@ struct ContentView: View {
         let co2PerLiter = 2.31 // kg CO2 per liter of gasoline
         carbonFootprint = usageAmountOfFuelAtOneKilometer * co2PerLiter * kilometer
     }
+    
+    
+    private func clearFields() {
+            fuelPrice = ""
+            kilometer = ""
+            fuelUsageAt100km = ""
+            numberOfPassangers = ""
+            totalCost = 0
+            costPerPerson = 0
+            carbonFootprint = 0
+        }
+    
 }
 
 struct TextFieldModifier: ViewModifier {
@@ -189,19 +227,6 @@ struct TextFieldModifier: ViewModifier {
     }
 }
 
-struct iOSCheckboxToggleStyle: ToggleStyle {
-    func makeBody(configuration: Configuration) -> some View {
-        Button(action: {
-            configuration.isOn.toggle()
-        }, label: {
-            HStack {
-                Image(systemName: configuration.isOn ? "checkmark.square" : "square")
-                    .foregroundStyle(.primary)
-                configuration.label
-            }
-        })
-    }
-}
 
 #Preview {
     ContentView()
